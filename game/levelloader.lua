@@ -23,10 +23,10 @@ function P.loadlevel(filename)
   j = io.read():gmatch("%d+")
   L.goal.x, L.goal.y = j.next(), j.next()
   j = 0
-  while line = io.read() do
+  for line in io.read() do
     j = j + 1
     for i = 1, 17 do
-      if line:(i,i) == "1" then
+      if line:sub(i,i) == "1" then
         L.plat[j][i] = true
       end
     end
