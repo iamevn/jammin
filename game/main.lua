@@ -1,5 +1,8 @@
+require "jumper"
+-- require "levelloader"
 -- love.load() is called once when a LövePotion game is ran.
 function love.load()
+	J = jumper.Jumper:new(140,540, nil, -1, nil, nil, nil, false)
 
 	-- Enables 3D mode.
 	love.graphics.set3D(false)
@@ -79,6 +82,14 @@ function love.draw()
 		end
 	end
 
+	-- Draw jumper
+	local Jsize = 10
+	love.graphics.setColor(0,255,0)
+	love.graphics.setScreen('top')
+	love.graphics.rectangle('fill', screens.top.margin + J.pxpos.x - Jsize / 2, J.pxpos.y - (480 - ypos) - Jsize + 1, Jsize, Jsize)
+	love.graphics.setScreen('bottom')
+	love.graphics.rectangle('fill', screens.bottom.margin + J.pxpos.x - Jsize / 2, J.pxpos.y - (480 - ypos) - Jsize + 1 - screens.top.h, Jsize, Jsize)
+
 	-- Draw sun 
 	-- does this break things?
 	-- looks like it does.
@@ -119,7 +130,6 @@ function love.draw()
 	love.graphics.setColor(35, 31, 32)
 	love.graphics.print(str, 15, 55)
 
-
 	-- draw sun pos for test purposes
 	-- love.graphics.setColor(255,255,0,255)
 	-- local sx = (sunx - 1) * world.gridsize
@@ -158,6 +168,11 @@ function love.update(dt)
 		-- update litBlocks
 		checkForLitBlocks()
 	end
+
+	if love.keyboard.isDown("a") then
+		J:jump(J.jump_v)
+	end
+	J:update(dt, world.litBlocks, 18)
 end
 
 -- love.keypressed is called when any button is pressed.
@@ -172,6 +187,27 @@ function love.keypressed(key)
 		love.event.quit()
 	end
 
+	if key == 'a' then
+		J:jump(J.jump_v)
+	end
+
+	if key == 'dright' then
+		J:move(2)
+	end
+	if key == 'dleft' then
+		J:move(-2)
+	end
+end
+
+-- called when any button is released
+function love.keyreleased(key)
+	if key == 'a' then
+		J:clipWings()
+	end
+
+	if key == 'dright' or key == 'dleft' then
+		J:move(0)
+	end
 end
 
 -- love.quit is called when LövePotion is quitting.
@@ -245,7 +281,7 @@ function bresenhamLine(x0, y0, x1, y1)
 	if y0 > y1 then sy = -1 end
 	if dx > dy then
 		local err = dx / 2
-		while round(x) ~= round(x1) do
+		while round(x) ~= round(x1) do 
 			table.insert(T, {x=x, y=y})
 			err = err - dy
 			if err < 0 then
