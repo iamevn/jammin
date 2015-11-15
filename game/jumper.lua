@@ -7,18 +7,18 @@ end
 
 --set needed packages as locals here
 
-setfenv(1, P)
+-- setfenv(1, P)
 
-Jumper = {
-  pxpos = {x=0, y=0},
-  pxvel = {x=0, y=0},
-  max_jump_h = 63,
+P.Jumper = {
+  pxpos = {x = 0, y = 0},
+  pxvel = {x = 0, y = 0},
+  max_jump_h = 45,
   jump_h = 0,
-  jump_v = 2,
-  standing = false
+  jump_v = -1,
+  standing = true
 }
 
-function Jumper:new(posx, posy, velx, vely, mjh, jh, jv, s, o)
+function P.Jumper:new(posx, posy, velx, vely, mjh, jh, jv, s, o)
   o = o or {}
   setmetatable(o, self)
   self.__index = self
@@ -49,59 +49,66 @@ function Jumper:new(posx, posy, velx, vely, mjh, jh, jv, s, o)
   return o
 end
 
-function Jumper:jump()
+function P.Jumper:jump(jv)
   if self.standing then
-    self.pxvel.y = jump_v
+    self.pxvel.y = jv
+    self.standing = false
   end
   return self
 end
 
-function Jumper:clipWings()
+function P.Jumper:clipWings()
   if self.pxvel.y >= 0 then
     self.pxvel.y = self.pxvel.y * -1
   end
   return self
 end
 
-function Jumper:move(dx)
+function P.Jumper:move(dx)
   self.pxvel.x = dx
   return self
 end
 
-local function Jumper:fall(dt, level, pxl_ratio)
-  newposy = self.pxpos.y + dt*self.pxvel.y
+function P.Jumper:fall(dt, level, pxl_ratio)
+  local newposy = self.pxpos.y + (self.pxvel.y)*dt
 
   -- check for jumping too high
-  if self.pxvel.y > 0 then
-    self.jump_h = self.jump_h + dt*self.pxvel.y
+  if self.pxvel.y < 0 then
+    self.jump_h = self.jump_h - dt*self.pxvel.y
     if self.jump_h >= self.max_jump_h then
-      self.pos.y = self.pos.y + dt*self.pxvel.y + self.max_jump_h - self.jump_h
+      self.pxpos.y = self.pxpos.y - (dt*self.pxvel.y + self.max_jump_h - self.jump_h)
       self.pxvel.y = self.pxvel.y * -1
       self.jump_h = self.max_jump_h
       return self
     end
-    self.pos.y = newposy
+    self.pxpos.y = newposy
     return self
   end
 
   -- if check floor if standing
   if self.standing then
-    if not level[self.pxpos.x/pxl_ratio + 1][self.pxpos.y/pxl_ratio + 2] then
-      self.pxvel.y = -jump_v
-      newposy = self.pxpos.y + dt*self.pxvel.y
-      self.standing = false
+    if level[self.pxpos.x/pxl_ratio + 1] then
+      if not level[self.pxpos.x/pxl_ratio + 1][self.pxpos.y/pxl_ratio + 2] then
+        self:jump(-(self.jump_v))
+        newposy = self.pxpos.y + dt*self.pxvel.y
+      end
     end
   end
 
   --check for landing
-  i = self.pxpos.x/pxl_ratio + 1
-  for j = self.pxpos.y/pxl_ratio + 2, newposy/pxl_ratio + 1, -1 do
-    if level[i][j] then
-      self.pxpos.y = (j-1)*pxl_ratio - 1
-      self.pxvel.y = 0
-      self.standing = true
-      self.jump_h = 0
-      return self
+  i = math.ceil(self.pxpos.x/pxl_ratio)
+  print("landing check: " .. i .. ", " .. (math.ceil(self.pxpos.y/pxl_ratio) + 1) .. ":" .. (math.ceil(newposy/pxl_ratio)))
+  for j = (math.ceil(self.pxpos.y/pxl_ratio) + 1), (math.ceil(newposy/pxl_ratio)) do
+    print("checking: " .. i .. ", " .. j)
+    if level[j] then
+      if level[j][i] then
+        self.pxpos.y = (j-1)*pxl_ratio - 1
+        self.pxvel.y = 0
+        self.standing = true
+        self.jump_h = 0
+        print("landed")
+        return self
+      end
     end
   end
 
@@ -110,11 +117,19 @@ local function Jumper:fall(dt, level, pxl_ratio)
   return self
 end
 
-function Jumper:update(dtr, level, pxl_ratio)
+function P.Jumper:update(dtr, level, pxl_ratio)
   local dt = math.ceil(dtr*100)
-  self.pxpos.x += dt*self.pxvel.x
-  self.fall(dt, level, pxl_ratio)
+  self.pxpos.x = self.pxpos.x + dt*self.pxvel.x
+  self:fall(dt, level, pxl_ratio)
   return self
+end
+
+function P.Jumper:print(px_r)
+  if px_r then
+    return string.format("pos (%d, %d), vel (%d, %d), jump_h %d", math.ceil(self.pxpos.x/px_r), math.ceil(self.pxpos.y/px_r), self.pxvel.x, self.pxvel.y, self.jump_h, self.jump_v)
+  else
+    return string.format("pos (%d, %d), vel (%d, %d), jump_h %d", self.pxpos.x, self.pxpos.y, self.pxvel.x, self.pxvel.y, self.jump_h, self.jump_v)
+  end
 end
 
 return P
