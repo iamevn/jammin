@@ -11,69 +11,90 @@ function love.load()
 
 	screens = {offset = 40, top = {w = 400, h = 240}, bottom = {w = 320, h = 240}}
 
-	sun = {pos = {x = 100, y = 100}, speed = 50, radius = 10, c = {r = 255, g = 255, b = 0}}
-	world = {gridsize= 32, grid = {}}
+	-- sun = {pos = {x = 100, y = 100}, speed = 50, radius = 10, c = {r = 255, g = 255, b = 0}}
+	world = {gridsize= 20, grid = {}, litBlocks = {}}
+	ypos = 1
+	ymax = 480
 
-	for y = 1, 480 / world.gridsize do
-		world.grid[y] = {0}
-		for x = 1, 320 / world.gridsize do
-			world.grid[y][x] = {objtype = 'air', pos = {x = x, y = y}, lit = true}
-		end
+	-- initialize level to be empty air
+	for y = 1, 50 do
+		world.grid[y] = {}
 	end
 
-	world.grid[6][3].objtype = 'block'
-	world.grid[6][4].objtype = 'block'
-	world.grid[6][5].objtype = 'block'
+	for x = 3,14 do
+		world.grid[6][x] = true
+		world.grid[29][x] = true
+	end
+	for x = 7,9 do
+		world.grid[10][x] = true
+		world.grid[33][x] = true
+	end
 
-	world.grid[10][7].objtype = 'block'
-	world.grid[10][8].objtype = 'block'
-	world.grid[10][9].objtype = 'block'
+	-- for y = 1,48,2 do
+	-- 	world.grid[y][8] = true
+	-- end
+	-- for y = 2,48,2 do
+	-- 	world.grid[y][9] = true
+	-- end
 
+	-- set which blocks are lit initially
+	checkForLitBlocks()
+	
 	-- Sets the background color
 	love.graphics.setBackgroundColor(0,0,0)
 
-
+	world.levelimg = love.graphics.newImage('level.png')
+	overlay = love.graphics.newImage('overlaysun.png')
 
 	lastKey = ''
-	refresh = true
 end
 
 -- love.draw() is called every frame. Any and all draw code goes here. (images, shapes, text etc.)
 function love.draw()
 
+	-- Draw bmp in proper place
 	-- Start drawing to the top screen
-	love.graphics.setScreen('top')
-
-	-- Reset the current draw color to white
 	love.graphics.setColor(255, 255, 255)
+	love.graphics.setScreen('top')
+	love.graphics.draw(world.levelimg, screens.offset, 0 - (480 - ypos))
+	love.graphics.setScreen('bottom')
+	love.graphics.draw(world.levelimg, 0, 0 - screens.top.h - (480 - ypos))
 
+	-- Draw lit blocks
+	for i, block in ipairs(world.litBlocks) do
+		local x = (block.x - 1) * world.gridsize
+		local y = (block.y - 1) * world.gridsize - (480 - ypos)
 
-	-- make a grid thing
-	colors = {{r = 88, g = 186, b = 255}, {r = 20, g = 140, b = 255}}
-	cix = 1
-
-	if refresh then
-		-- Draw world
-		for j, row in ipairs(world.grid) do
-			cix = cix % 2
-			cix = cix + 1
-			for i, v in ipairs(row) do
-				if v.objtype == 'air' then
-					love.graphics.setColor(colors[cix].r, colors[cix].g, colors[cix].b)
-					if j * world.gridsize <= 300 then
-						love.graphics.setScreen('top')
-						love.graphics.rectangle('fill', i * world.gridsize - world.gridsize + screens.offset, j * world.gridsize - world.gridsize, world.gridsize, world.gridsize)
-					end
-					if j * world.gridsize >= 240 then
-						love.graphics.setScreen('bottom')
-						love.graphics.rectangle('fill', i * world.gridsize - world.gridsize, j * world.gridsize - screens.top.h - world.gridsize, world.gridsize, world.gridsize)
-					end
-				end
-				cix = cix % 2
-				cix = cix + 1
-			end
+		if y <= 300 then
+			love.graphics.setScreen('top')
+			love.graphics.rectangle('fill', x + screens.offset, y, world.gridsize, world.gridsize)
+		end
+		if y >= 200 then
+			love.graphics.setScreen('bottom')
+			love.graphics.rectangle('fill', x, y - screens.top.h, world.gridsize, world.gridsize)
 		end
 	end
+
+	-- Draw sun 
+	-- does this break things?
+	-- looks like it does.
+	--    https://github.com/VideahGams/LovePotion/issues/3
+	--    https://github.com/xerpi/sf2dlib/issues/9
+	-- love.graphics.setColor(255,255,0, 120)
+	-- love.graphics.setScreen('top')
+	-- love.graphics.circle('fill', screens.top.w / 2, screens.top.h, 20, 50)
+	-- love.graphics.setScreen('bottom')
+	-- love.graphics.circle('fill', screens.bottom.w / 2, 0, 20, 50)
+	-- Since drawing the sun broke things, let's put the sun as part of the overlay instead.
+
+	love.graphics.setColor(255,255,255,255)
+
+	-- Draw shadow overlay
+	love.graphics.setColor(255,255,255,255)
+	love.graphics.setScreen('top')
+	love.graphics.draw(overlay, 0,0)
+	love.graphics.setScreen('bottom')
+	love.graphics.draw(overlay, 0 - screens.offset, 0 - screens.top.h)
 
 	love.graphics.setScreen('top')
 	-- Draws the framerate
@@ -82,45 +103,38 @@ function love.draw()
 	love.graphics.setColor(35, 31, 32)
 	love.graphics.setFont(font)
 	love.graphics.print('FPS: ' .. love.timer.getFPS(), 15, 15)
-	-- What was last key hit?
+	-- how many blocks are lit?
 	love.graphics.setColor(255, 255, 255)
-	love.graphics.rectangle('fill', 10, 35, font:getWidth('lastKey: ' .. lastKey) + 10, font:getHeight() + 3)
+	love.graphics.rectangle('fill', 10, 35, font:getWidth('litBlocks: ' .. #world.litBlocks) + 10, font:getHeight() + 3)
 	love.graphics.setColor(35, 31, 32)
-	love.graphics.print('lastKey: ' .. lastKey, 15, 35)
-
-	-- Draw sun
-	love.graphics.setColor(sun.c.r, sun.c.g, sun.c.b)
-	if sun.pos.y >= 240 - sun.radius then
-		love.graphics.setScreen('bottom')
-		love.graphics.circle('fill', sun.pos.x, sun.pos.y - screens.top.h, sun.radius, 100)
-	end
-	if sun.pos.y <= 240 + sun.radius then
-		love.graphics.setScreen('top')
-		love.graphics.circle('fill', sun.pos.x + screens.offset, sun.pos.y, sun.radius, 100)
-	end
+	love.graphics.print('litBlocks: ' .. #world.litBlocks, 15, 35)
 end
 
 -- love.update(dt) is called every frame, and is used for game logic.
 -- The dt argument is delta-time, the average time between frames.
 -- Use this to make your game framerate independent.
 function love.update(dt)
-	if love.keyboard.isDown("cpadright") then
-		sun.pos.x = sun.pos.x + sun.speed * dt
-	end
-
-	if love.keyboard.isDown("cpadleft") then
-		sun.pos.x = sun.pos.x - sun.speed * dt
+	local moved = false
+	if love.keyboard.isDown("cpadup") then
+		ypos = ypos + 100 * dt
+		if ypos > ymax then
+			ypos = ymax
+		end
+		moved = true
 	end
 
 	if love.keyboard.isDown("cpaddown") then
-		sun.pos.y = sun.pos.y + sun.speed * dt
+		ypos = ypos - 100 * dt
+		if ypos < 0 then
+			ypos = 0
+		end
+		moved = true
 	end
-
-	if love.keyboard.isDown("cpadup") then
-		sun.pos.y = sun.pos.y - sun.speed * dt
+	if moved then
+		-- update litBlocks
+		checkForLitBlocks()
 	end
 end
-
 
 -- love.keypressed is called when any button is pressed.
 -- The argument key is the key that was pressed.
@@ -133,18 +147,36 @@ function love.keypressed(key)
 	if key == 'start' then
 		love.event.quit()
 	end
-	if key == 'a' then
-		if refresh then
-			refresh = false
-		else
-			refresh = true
-		end
-	end
 
 end
 
 -- love.quit is called when LövePotion is quitting.
 -- You can put all your cleanup code and the likes here.
-function love.quit()
-	x = 1
+-- (don't need it)
+-- function love.quit()
+-- 	x = 1
+-- end
+
+-- given an x, y coordinate, is there a clear path from it to the center of the screen?
+function checkLit(x, y)
+	return true
 end
+
+-- called whenever the screen changes (should call on load)
+-- checks whether blocks in level are within the lit area (just check those that are in the right y range)
+function checkForLitBlocks()
+	t = {}
+	minvalidy = 5 + (480 - ypos) / world.gridsize
+	maxvalidy = 20 + (480 - ypos) / world.gridsize
+	for j, row in pairs(world.grid) do
+		if j and j >= minvalidy and j <= maxvalidy then
+			for i, b in pairs(row) do
+				if checkLit(i,j) then
+					table.insert(t, {x = i, y = j})
+				end
+			end
+		end
+	end
+	world.litBlocks = t
+end
+
