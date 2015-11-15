@@ -26,7 +26,7 @@ function P.loadlevel(filename)
   while line = io.read() do
     j = j + 1
     for i = 1, 17 do
-      if line:(i,i) == '1' then
+      if line:(i,i) == "1" then
         L.plat[j][i] = true
       end
     end
