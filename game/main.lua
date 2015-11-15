@@ -9,12 +9,13 @@ function love.load()
 
 	font = love.graphics.newFont() -- Creates a new font, when no arguments are given it uses the default font
 
-	screens = {offset = 40, top = {w = 400, h = 240}, bottom = {w = 320, h = 240}}
+	screens = {top = {w = 400, h = 240, margin = 47}, bottom = {w = 320, h = 240, margin = 7}}
 
-	-- sun = {pos = {x = 100, y = 100}, speed = 50, radius = 10, c = {r = 255, g = 255, b = 0}}
-	world = {gridsize= 20, grid = {}, litBlocks = {}}
+	world = {gridsize= 18, grid = {}, litBlocks = {}}
 	ypos = 1
 	ymax = 480
+	sunx = 9.0
+	suny = 0
 
 	-- initialize level to be empty air
 	for y = 1, 50 do
@@ -39,12 +40,13 @@ function love.load()
 
 	-- set which blocks are lit initially
 	checkForLitBlocks()
-	
+
 	-- Sets the background color
 	love.graphics.setBackgroundColor(0,0,0)
 
 	world.levelimg = love.graphics.newImage('level.png')
 	overlay = love.graphics.newImage('overlaysun.png')
+	-- overlay = love.graphics.newImage('overlay.png')
 
 	lastKey = ''
 end
@@ -56,22 +58,24 @@ function love.draw()
 	-- Start drawing to the top screen
 	love.graphics.setColor(255, 255, 255)
 	love.graphics.setScreen('top')
-	love.graphics.draw(world.levelimg, screens.offset, 0 - (480 - ypos))
+	love.graphics.draw(world.levelimg, screens.top.margin, 0 - (480 - ypos))
 	love.graphics.setScreen('bottom')
-	love.graphics.draw(world.levelimg, 0, 0 - screens.top.h - (480 - ypos))
+	love.graphics.draw(world.levelimg, screens.bottom.margin, 0 - screens.top.h - (480 - ypos))
 
 	-- Draw lit blocks
-	for i, block in ipairs(world.litBlocks) do
-		local x = (block.x - 1) * world.gridsize
-		local y = (block.y - 1) * world.gridsize - (480 - ypos)
+	for j, row in pairs(world.litBlocks) do
+		for i, block in pairs(row) do
+			local x = (i - 1) * world.gridsize
+			local y = (j - 1) * world.gridsize - (480 - ypos)
 
-		if y <= 300 then
-			love.graphics.setScreen('top')
-			love.graphics.rectangle('fill', x + screens.offset, y, world.gridsize, world.gridsize)
-		end
-		if y >= 200 then
-			love.graphics.setScreen('bottom')
-			love.graphics.rectangle('fill', x, y - screens.top.h, world.gridsize, world.gridsize)
+			if y <= 300 then
+				love.graphics.setScreen('top')
+				love.graphics.rectangle('fill', x + screens.top.margin, y, world.gridsize, world.gridsize)
+			end
+			if y >= 200 then
+				love.graphics.setScreen('bottom')
+				love.graphics.rectangle('fill', x + screens.bottom.margin, y - screens.top.h, world.gridsize, world.gridsize)
+			end
 		end
 	end
 
@@ -94,8 +98,9 @@ function love.draw()
 	love.graphics.setScreen('top')
 	love.graphics.draw(overlay, 0,0)
 	love.graphics.setScreen('bottom')
-	love.graphics.draw(overlay, 0 - screens.offset, 0 - screens.top.h)
+	love.graphics.draw(overlay, 0 - (screens.top.margin - screens.bottom.margin), 0 - screens.top.h)
 
+	--text stuff
 	love.graphics.setScreen('top')
 	-- Draws the framerate
 	love.graphics.setColor(255, 255, 255)
@@ -105,9 +110,28 @@ function love.draw()
 	love.graphics.print('FPS: ' .. love.timer.getFPS(), 15, 15)
 	-- how many blocks are lit?
 	love.graphics.setColor(255, 255, 255)
-	love.graphics.rectangle('fill', 10, 35, font:getWidth('litBlocks: ' .. #world.litBlocks) + 10, font:getHeight() + 3)
+	love.graphics.rectangle('fill', 10, 35, font:getWidth('litBlocks: ' .. litCount) + 10, font:getHeight() + 3)
 	love.graphics.setColor(35, 31, 32)
-	love.graphics.print('litBlocks: ' .. #world.litBlocks, 15, 35)
+	love.graphics.print('litBlocks: ' .. litCount, 15, 35)
+	love.graphics.setColor(255,255,255)
+	local str = 'sun at: (' .. math.floor(sunx) .. ', ' .. math.floor(suny) .. ')'
+	love.graphics.rectangle('fill', 10, 55, font:getWidth(str) + 10, font:getHeight() + 3)
+	love.graphics.setColor(35, 31, 32)
+	love.graphics.print(str, 15, 55)
+
+
+	-- draw sun pos for test purposes
+	-- love.graphics.setColor(255,255,0,255)
+	-- local sx = (sunx - 1) * world.gridsize
+	-- local sy = (suny - 1) * world.gridsize - (480 - ypos)
+	-- if sy <= 300 then
+	-- 	love.graphics.setScreen('top')
+	-- 	love.graphics.rectangle('fill', sx + screens.top.margin, sy, world.gridsize, world.gridsize)
+	-- end
+	-- if sy >= 200 then
+	-- 	love.graphics.setScreen('bottom')
+	-- 	love.graphics.rectangle('fill', sx + screens.bottom.margin, sy - screens.top.h, world.gridsize, world.gridsize)
+	-- end
 end
 
 -- love.update(dt) is called every frame, and is used for game logic.
@@ -157,22 +181,25 @@ end
 -- 	x = 1
 -- end
 
--- given an x, y coordinate, is there a clear path from it to the center of the screen?
-function checkLit(x, y)
-	return true
-end
-
 -- called whenever the screen changes (should call on load)
 -- checks whether blocks in level are within the lit area (just check those that are in the right y range)
 function checkForLitBlocks()
-	t = {}
-	minvalidy = 5 + (480 - ypos) / world.gridsize
-	maxvalidy = 20 + (480 - ypos) / world.gridsize
+	local t = {}
+	litCount = 0
+	local minvalidy = 5 + (480 - ypos) / world.gridsize
+	local maxvalidy = 23 + (480 - ypos) / world.gridsize
+	--sunx never changes
+	-- sunx = 9
+	suny = round((maxvalidy - minvalidy) / 2) + minvalidy
 	for j, row in pairs(world.grid) do
 		if j and j >= minvalidy and j <= maxvalidy then
 			for i, b in pairs(row) do
 				if checkLit(i,j) then
-					table.insert(t, {x = i, y = j})
+					if not t[j] then
+						t[j] = {}
+					end
+					t[j][i] = true
+					litCount = litCount + 1
 				end
 			end
 		end
@@ -180,3 +207,84 @@ function checkForLitBlocks()
 	world.litBlocks = t
 end
 
+-- given an x, y coordinate, is there a clear path from it to the center of the screen?
+function checkLit(x, y)
+	-- local sx = sunx
+	local sx = 9
+	local sy = suny
+
+	if sx == x and sy == y then return true end
+
+	T = bresenhamLine(x, y, sx, sy)
+	if #T <= 3 then return true end
+
+	for n = 2, #T -1 do
+		i,j = T[n].x, T[n].y
+		if world.grid[j] and world.grid[j][i] then
+			return false
+		end
+	end
+	-- for i, j in bresenhamLine(x, y, sx, sy) do
+	-- 	if world.grid[j] and world.grid[j][i] then
+	-- 		return false
+	-- 	end
+	-- end
+	return true
+end
+
+-- given two x, y coordinates, returns an interator sort of thing
+-- that consists of each point on the line between them
+-- (starting at first one and ending just before last one)
+function bresenhamLine(x0, y0, x1, y1)
+	local T = {}
+	local dx = math.abs(x1 - x0)
+	local dy = math.abs(y1 - y0)
+	local x, y = x0, y0
+	local sx, sy = 1, 1
+	if x0 > x1 then sx = -1 end
+	if y0 > y1 then sy = -1 end
+	if dx > dy then
+		local err = dx / 2
+		while round(x) ~= round(x1) do
+			table.insert(T, {x=x, y=y})
+			err = err - dy
+			if err < 0 then
+				y = y + sy
+				err = err + dx
+			end
+			x = x + sx
+		end
+	else
+		local err = dy / 2
+		while round(y) ~= round(y1) do
+			table.insert(T, {x=x, y=y})
+			err = err - dx
+			if err < 0 then
+				x = x + sx
+				err = err + dy
+			end
+			y = y + sy
+		end
+	end
+	table.insert(T, {x=x, y=y})
+	-- local n = 0
+	-- return function ()
+	-- 	if n < #T then
+	-- 		n = n + 1
+	-- 		return T[n].x, T[n].y
+	-- 	end
+	-- end
+	return T
+end
+
+function round(num)
+    under = math.floor(num)
+    upper = math.floor(num) + 1
+    underV = -(under - num)
+    upperV = upper - num
+    if (upperV > underV) then
+        return under
+    else
+        return upper
+    end
+end
