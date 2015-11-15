@@ -87,8 +87,8 @@ function P.Jumper:fall(dt, level, pxl_ratio)
 
   -- if check floor if standing
   if self.standing then
-    if level[self.pxpos.x/pxl_ratio + 1] then
-      if not level[self.pxpos.x/pxl_ratio + 1][self.pxpos.y/pxl_ratio + 2] then
+    if level[math.ceil(self.pxpos.x/pxl_ratio)] then
+      if not level[math.ceil(self.pxpos.x/pxl_ratio)][math.ceil(self.pxpos.y/pxl_ratio) + 1] then
         self:jump(-(self.jump_v))
         newposy = self.pxpos.y + dt*self.pxvel.y
       end
