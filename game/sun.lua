@@ -1,4 +1,4 @@
-local P = {} -- Person package
+local P = {} -- Sun package
 if _REQUIREDNAME == nil then
   sun = P
 else
