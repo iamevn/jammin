@@ -1,9 +1,7 @@
 require "jumper"
--- require "levelloader"
+require "levelloader"
 -- love.load() is called once when a LövePotion game is ran.
 function love.load()
-	J = jumper.Jumper:new(140,540, nil, -1, nil, nil, nil, false)
-
 	-- Enables 3D mode.
 	love.graphics.set3D(false)
 
@@ -20,26 +18,12 @@ function love.load()
 	sunx = 9.0
 	suny = 0
 
-	-- initialize level to be empty air
-	for y = 1, 50 do
-		world.grid[y] = {}
-	end
-
-	for x = 3,14 do
-		world.grid[6][x] = true
-		world.grid[29][x] = true
-	end
-	for x = 7,9 do
-		world.grid[10][x] = true
-		world.grid[33][x] = true
-	end
-
-	-- for y = 1,48,2 do
-	-- 	world.grid[y][8] = true
-	-- end
-	-- for y = 2,48,2 do
-	-- 	world.grid[y][9] = true
-	-- end
+	L = levelloader.loadlevel("level1.txt")
+	world.grid = L.plat
+	Jsize = 10
+	local px = L.start.x * world.gridsize + Jsize / 2
+	local py = L.start.y * world.gridsize - world.gridsize
+	J = jumper.Jumper:new(px,py, nil, 0, nil, nil, nil, false)
 
 	-- set which blocks are lit initially
 	checkForLitBlocks()
@@ -83,7 +67,6 @@ function love.draw()
 	end
 
 	-- Draw jumper
-	local Jsize = 10
 	love.graphics.setColor(0,255,0)
 	love.graphics.setScreen('top')
 	love.graphics.rectangle('fill', screens.top.margin + J.pxpos.x - Jsize / 2, J.pxpos.y - (480 - ypos) - Jsize + 1, Jsize, Jsize)
@@ -149,7 +132,8 @@ end
 -- Use this to make your game framerate independent.
 function love.update(dt)
 	local moved = false
-	if love.keyboard.isDown("cpadup") then
+	-- if love.keyboard.isDown("cpadup") then
+	if love.keyboard.isDown("dup") then
 		ypos = ypos + 100 * dt
 		if ypos > ymax then
 			ypos = ymax
@@ -157,7 +141,8 @@ function love.update(dt)
 		moved = true
 	end
 
-	if love.keyboard.isDown("cpaddown") then
+	-- if love.keyboard.isDown("cpaddown") then
+	if love.keyboard.isDown("ddown") then
 		ypos = ypos - 100 * dt
 		if ypos < 0 then
 			ypos = 0
@@ -187,15 +172,19 @@ function love.keypressed(key)
 		love.event.quit()
 	end
 
+	if key == 'select' then
+		love.load()
+	end
+
 	if key == 'a' then
 		J:jump(J.jump_v)
 	end
 
 	if key == 'dright' then
-		J:move(2)
+		J:move(1)
 	end
 	if key == 'dleft' then
-		J:move(-2)
+		J:move(-1)
 	end
 end
 
@@ -324,3 +313,4 @@ function round(num)
         return upper
     end
 end
+

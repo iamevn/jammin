@@ -19,11 +19,11 @@ function P.loadlevel(filename)
 
   io.input(filename)
   j = io.read():gmatch("%d+")
-  L.start.x, L.start.y = j.next(), j.next()
+  L.start.x, L.start.y = j(), j()
   j = io.read():gmatch("%d+")
-  L.goal.x, L.goal.y = j.next(), j.next()
+  L.goal.x, L.goal.y = j(), j()
   j = 0
-  for line in io.read() do
+  for line in function() return io.read() end do
     j = j + 1
     for i = 1, 17 do
       if line:sub(i,i) == "1" then
