@@ -57,7 +57,7 @@ function P.Jumper:jump(jv)
   if self.standing then
     self.pxvel.y = jv
     self.standing = false
-    self.jump_e()
+    if jv < 0 then self.jump_e() end
   end
   return self
 end
