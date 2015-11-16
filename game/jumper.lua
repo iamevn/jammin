@@ -15,10 +15,11 @@ P.Jumper = {
   max_jump_h = 45,
   jump_h = 0,
   jump_v = -1,
+  jump_e = function() end,
   standing = true
 }
 
-function P.Jumper:new(posx, posy, velx, vely, mjh, jh, jv, s, o)
+function P.Jumper:new(posx, posy, velx, vely, mjh, jh, jv, je, s, o)
   o = o or {}
   setmetatable(o, self)
   self.__index = self
@@ -43,6 +44,9 @@ function P.Jumper:new(posx, posy, velx, vely, mjh, jh, jv, s, o)
   if jv then
     self.jump_v = jv
   end
+  if je then
+    self.jump_e = je
+  end
   if s then
     self.standing = s
   end
@@ -53,6 +57,7 @@ function P.Jumper:jump(jv)
   if self.standing then
     self.pxvel.y = jv
     self.standing = false
+    self.jump_e()
   end
   return self
 end

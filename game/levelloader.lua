@@ -13,11 +13,12 @@ function P.loadlevel(filename)
     plat = {}
     }
 
-  for i = 1, 48 do
+  io.input(filename)
+
+  for i = 1, io.read() do
     L.plat[i] = {}
   end
 
-  io.input(filename)
   j = io.read():gmatch("%d+")
   L.start.x, L.start.y = j(), j()
   j = io.read():gmatch("%d+")
